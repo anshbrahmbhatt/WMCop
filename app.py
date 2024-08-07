@@ -81,6 +81,7 @@ models = {
 @app.route('/')
 def index():
     return render_template('michael.html')
+from google.api_core.exceptions import ResourceExhausted
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -94,26 +95,30 @@ def submit():
         # Adding user's input to the history
         history[personality].append({"role": "user", "parts": [user_input]})
 
-        # Generating the response from the model
-        response = model.generate_content(
-            [user_input],
-            safety_settings={
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE
-            }
-        )
+        try:
+            # Generating the response from the model
+            response = model.generate_content(
+                [user_input],
+                safety_settings={
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE
+                }
+            )
+            model_response = response.text
 
-        model_response = response.text
+            # Adding model's response to the history
+            history[personality].append({"role": "model", "parts": [model_response]})
 
-        # Adding model's response to the history
-        history[personality].append({"role": "model", "parts": [model_response]})
+            # Save history to file
+            save_history()
 
-        # Save history to file
-        save_history()
+            return jsonify({"message": model_response})
 
-        return jsonify({"message": model_response})
+        except ResourceExhausted as e:
+            alert("API Quota excedded");
+            return jsonify({"error": "API quota exceeded. Please try again later."}), 503
 
     return jsonify({"error": "No input or invalid personality provided"}), 400
 

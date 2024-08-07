@@ -5,6 +5,28 @@ from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
 
+
+
+import json
+
+def save_history():
+    with open('history.json', 'w') as f:
+        json.dump(history, f)
+
+def load_history():
+    global history
+    try:
+        with open('history.json', 'r') as f:
+            history = json.load(f)
+    except FileNotFoundError:
+        history = {"Michael": [], "Trevor": [], "Franklin": []}
+
+# Load history when the application starts
+load_history()
+
+
+
+
 # Load the API key from an environment variable (recommended)
 API_KEY = os.getenv("GEMINI_API_KEY")
 
@@ -71,10 +93,10 @@ def submit():
     data = request.get_json()
     user_input = data.get('input')
     personality = data.get('personality', 'Michael')
-    
+
     if user_input and personality in models:
         model = models[personality]
-        
+
         # Adding user's input to the history
         history[personality].append({"role": "user", "parts": [user_input]})
 
@@ -94,9 +116,13 @@ def submit():
         # Adding model's response to the history
         history[personality].append({"role": "model", "parts": [model_response]})
 
+        # Save history to file
+        save_history()
+
         return jsonify({"message": model_response})
 
     return jsonify({"error": "No input or invalid personality provided"}), 400
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You will talk with us</title>
+  <!-- Linking Google Fonts For Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <!-- <link rel="stylesheet" href="{{ url_for('static', filename='normalize.css') }}"> -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="">
+  <header class="header">
+    <!-- Header Greetings -->
+    <h1 class="title">What’s up? It's Franklin – ready to hustle and make things happen.</h1>
+    <p class="subtitle"></p>
+    <!-- Suggestion list -->
+    <ul class="suggestion-list">
+      <li class="suggestion">
+        <h4 class="text" id="s1">Yo, Franklin, can you lend me some money. Don't worry I will give it back</h4>
+        <br><br><br>
+        <h4 style="color: greenyellow;">Send</h4>
+        <!-- <span class="icon material-symbols-rounded">draw</span> -->
+      </li>
+      <li class="suggestion">
+        <h4 class="text" id="s2">Franklin, how have you been? I heard you moved into a new place.</h4>
+        <!-- <span class="icon material-symbols-rounded">lightbulb</span> -->
+        <br><br><br>
+        <h4 style="color: greenyellow;">Send</h4>
+      </li>
+      <li class="suggestion">
+        <h4 class="text" id="s3">Franklin, do you think I should pursue my dream or should I focus on college?</h4>
+        <!-- <span class="icon material-symbols-rounded">explore</span> -->
+        <br><br><br>
+        <h4 style="color: greenyellow;">Send</h4>
+      </li>
+      <li class="suggestion">
+        <h4 class="text" id="s4">hey mate how was your day. can we meet today?</h4>
+        <!-- <span class="icon material-symbols-rounded">code</span> -->
+        <br><br><br>
+        <h4 style="color: greenyellow;">Send</h4>
+      </li>
+    </ul>
+  </header>
+
+  <div class="chat-container" 
+         data-avatar-url1="{{ url_for('static', filename='franklin.jpeg') }}" 
+         data-avatar-url2="{{ url_for('static', filename='Michael.jpg') }}" 
+         data-avatar-url3="{{ url_for('static', filename='Trevor.jpg') }}" 
+         data-user-avatar-url="{{ url_for('static', filename='user.jpg') }}">
+        <!-- Your chat container content here -->
+    </div>
+
+  <div class="chat-list"></div>
+
+  <div class="typing-area">
+    <form action="#" class="typing-form">
+      <div class="input-wrapper">
+        <input type="text" placeholder="Type your message here..." id="user-input" class="typing-input"  />
+        <button id="send-message-button" class="icon material-symbols-rounded" onclick="sendData('Franklin')">send</button>
+      </div>
+      <div class="action-buttons">
+
+          <img src="{{ url_for('static', filename='franklin.jpeg') }}" alt="Michael" class="action-icon" id="set-franklin">
+
+        <!-- <a href="https://example.com/light-mode" class="action-icon"> -->
+          <img src="{{ url_for('static', filename='Michael.jpg') }}" alt="Michael" class="action-icon" id="set-michael">
+        
+          <img src="{{ url_for('static', filename='Trevor.jpg') }}" alt="Trevor" id="set-trevor" class="action-icon">
+        
+        
+      </div>
+    </form>
+    <p class="disclaimer-text">
+      Do not trust the agent to provide valid information as they are human just like you.
+    </p>
+  </div>
+  <script src="{{ url_for('static', filename='mScript.js') }}"></script>
+</body>
+</html>

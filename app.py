@@ -1,13 +1,17 @@
 import os
+import json
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
 
-
-
-import json
+# Global history variable
+history = {
+    "Michael": [],
+    "Trevor": [],
+    "Franklin": []
+}
 
 def save_history():
     with open('history.json', 'w') as f:
@@ -23,9 +27,6 @@ def load_history():
 
 # Load history when the application starts
 load_history()
-
-
-
 
 # Load the API key from an environment variable (recommended)
 API_KEY = os.getenv("GEMINI_API_KEY")
@@ -43,7 +44,6 @@ generation_config = {
     "max_output_tokens": 8192,
     "response_mime_type": "text/plain",
 }
-
 models = {
     "Michael": genai.GenerativeModel(
         model_name="gemini-1.5-pro",
@@ -76,12 +76,6 @@ models = {
         "Try to answer in small, don't write a very long answer. It will be annoying for the people. Make sure you have all the knowledge of GTA 5. You can refer to this link for more detail : https://gta.fandom.com/wiki/Grand_Theft_Auto_V,  AND THIS LINK ALSO: https://en.wikipedia.org/wiki/Grand_Theft_Auto_V"
         # add the detailed instruction for Franklin here
     ),
-}
-
-history = {
-    "Michael": [],
-    "Trevor": [],
-    "Franklin": []
 }
 
 @app.route('/')
@@ -122,7 +116,6 @@ def submit():
         return jsonify({"message": model_response})
 
     return jsonify({"error": "No input or invalid personality provided"}), 400
-
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,32 +1,37 @@
 import os
-import json
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from flask import Flask, render_template, jsonify, request
+from pymongo import MongoClient
+from google.api_core.exceptions import ResourceExhausted
 
 app = Flask(__name__)
 
-# Global history variable
-history = {
-    "Michael": [],
-    "Trevor": [],
-    "Franklin": []
-}
+# MongoDB setup
+MONGO_URI = os.getenv('MONGO_URI')  # MongoDB connection string from environment variable
+client = MongoClient(MONGO_URI)
+db = client['chat_history']  # Use the database you created
+collection = db['history']  # Use the collection you created
 
-def save_history():
-    with open('history.json', 'w') as f:
-        json.dump(history, f)
+def save_history(personality, history_data):
+    collection.update_one(
+        {'personality': personality},
+        {'$set': {'history': history_data}},
+        upsert=True
+    )
 
-def load_history():
-    global history
-    try:
-        with open('history.json', 'r') as f:
-            history = json.load(f)
-    except FileNotFoundError:
-        history = {"Michael": [], "Trevor": [], "Franklin": []}
+def load_history(personality):
+    record = collection.find_one({'personality': personality})
+    if record:
+        return record['history']
+    return []
 
 # Load history when the application starts
-load_history()
+history = {
+    "Michael": load_history("Michael"),
+    "Trevor": load_history("Trevor"),
+    "Franklin": load_history("Franklin")
+}
 
 # Load the API key from an environment variable (recommended)
 API_KEY = os.getenv("GEMINI_API_KEY")
@@ -44,6 +49,7 @@ generation_config = {
     "max_output_tokens": 8192,
     "response_mime_type": "text/plain",
 }
+
 models = {
     "Michael": genai.GenerativeModel(
         model_name="gemini-1.5-pro",
@@ -81,7 +87,6 @@ models = {
 @app.route('/')
 def index():
     return render_template('michael.html')
-from google.api_core.exceptions import ResourceExhausted
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -111,13 +116,12 @@ def submit():
             # Adding model's response to the history
             history[personality].append({"role": "model", "parts": [model_response]})
 
-            # Save history to file
-            save_history()
+            # Save history to MongoDB
+            save_history(personality, history[personality])
 
             return jsonify({"message": model_response})
 
         except ResourceExhausted as e:
-            alert("API Quota excedded");
             return jsonify({"error": "API quota exceeded. Please try again later."}), 503
 
     return jsonify({"error": "No input or invalid personality provided"}), 400

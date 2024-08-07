@@ -2,36 +2,8 @@ import os
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from flask import Flask, render_template, jsonify, request
-from pymongo import MongoClient
-from google.api_core.exceptions import ResourceExhausted
 
 app = Flask(__name__)
-
-# MongoDB setup
-MONGO_URI = os.getenv('MONGO_URI')  # MongoDB connection string from environment variable
-client = MongoClient(MONGO_URI)
-db = client['chat_history']  # Use the database you created
-collection = db['history']  # Use the collection you created
-
-def save_history(personality, history_data):
-    collection.update_one(
-        {'personality': personality},
-        {'$set': {'history': history_data}},
-        upsert=True
-    )
-
-def load_history(personality):
-    record = collection.find_one({'personality': personality})
-    if record:
-        return record['history']
-    return []
-
-# Load history when the application starts
-history = {
-    "Michael": load_history("Michael"),
-    "Trevor": load_history("Trevor"),
-    "Franklin": load_history("Franklin")
-}
 
 # Load the API key from an environment variable (recommended)
 API_KEY = os.getenv("GEMINI_API_KEY")
@@ -83,6 +55,11 @@ models = {
         # add the detailed instruction for Franklin here
     ),
 }
+history = {
+    "Michael": [],
+    "Trevor": [],
+    "Franklin": []
+}
 
 @app.route('/')
 def index():
@@ -93,36 +70,30 @@ def submit():
     data = request.get_json()
     user_input = data.get('input')
     personality = data.get('personality', 'Michael')
-
+    
     if user_input and personality in models:
         model = models[personality]
-
+        
         # Adding user's input to the history
         history[personality].append({"role": "user", "parts": [user_input]})
 
-        try:
-            # Generating the response from the model
-            response = model.generate_content(
-                [user_input],
-                safety_settings={
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE
-                }
-            )
-            model_response = response.text
+        # Generating the response from the model
+        response = model.generate_content(
+            [user_input],
+            safety_settings={
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE
+            }
+        )
 
-            # Adding model's response to the history
-            history[personality].append({"role": "model", "parts": [model_response]})
+        model_response = response.text
 
-            # Save history to MongoDB
-            save_history(personality, history[personality])
+        # Adding model's response to the history
+        history[personality].append({"role": "model", "parts": [model_response]})
 
-            return jsonify({"message": model_response})
-
-        except ResourceExhausted as e:
-            return jsonify({"error": "API quota exceeded. Please try again later."}), 503
+        return jsonify({"message": model_response})
 
     return jsonify({"error": "No input or invalid personality provided"}), 400
 
